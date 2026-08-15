@@ -1,0 +1,19 @@
+schema_version = "1.0.0"
+
+id = "import_palettes"
+version = "1.0.0"
+name = "Import Palettes"
+tagline = "Import color palette files as Blender color palettes"
+maintainer = "Carlos Salas <carlossala95@gmail.com>"
+type = "add-on"
+
+tags = ["Import-Export", "Paint"]
+
+blender_version_min = "5.2.0"
+
+license = [
+  "SPDX:GPL-3.0-or-later",
+]
+
+[permissions]
+files = "Import a palette file selected by the user"
