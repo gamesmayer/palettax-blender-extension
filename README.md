@@ -1,9 +1,10 @@
-# Import JASC/Gale Palette (.pal)
+# Import Palettes
 
-A Blender extension that adds a **File > Import > JASC/Gale Palette (.pal)** menu
-entry. It reads a JASC-PAL (`.pal`) color palette file and imports it as a new
-color palette (`bpy.data.palettes`), ready to use in Texture Paint / Vertex
-Paint / Grease Pencil. Colors are imported directly as sRGB.
+A Blender extension that adds palette-import entries to **File > Import**.
+Currently supports JASC/Gale Palette (`.pal`) files; more formats may be
+added later. Imported colors become a new color palette (`bpy.data.palettes`),
+ready to use in Texture Paint / Vertex Paint / Grease Pencil, matching the
+original file's sRGB values.
 
 Requires Blender 5.2.0 or newer.
 
@@ -17,7 +18,7 @@ select the generated zip.
 ./build.sh
 ```
 
-This produces `import_jasc_palette-1.0.0.zip` in the project root, which can
+This produces `import_palettes-1.0.0.zip` in the project root, which can
 also be installed by dragging it into a running Blender window.
 
 If `blender` isn't on your `PATH`, point the script at it explicitly:
@@ -35,7 +36,7 @@ palette picker is used (e.g. the Texture Paint tool settings).
 ## Project layout
 
 ```
-blender_import_palette/
+src/
   blender_manifest.toml   extension manifest
   __init__.py             import operator + menu registration
 build.sh                  validates and packages the extension into a zip

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SOURCE_DIR="$ROOT_DIR/blender_import_palette"
+SOURCE_DIR="$ROOT_DIR/src"
 
 if [ -n "${BLENDER:-}" ]; then
     BLENDER_BIN="$BLENDER"
