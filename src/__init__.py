@@ -1,7 +1,7 @@
 import bpy
 from bpy.props import PointerProperty
 
-from . import ase, pal, panels, properties
+from . import ase, pal, panels, preferences, properties
 
 classes = (
     *properties.classes,
@@ -11,6 +11,7 @@ classes = (
     panels.PALETTE_PT_extended_view,
     panels.PALETTE_PT_extended_view_image_editor,
     panels.PALETTE_PT_extended_view_tool,
+    preferences.PALETTAX_AddonPreferences,
 )
 
 
@@ -25,9 +26,12 @@ def register():
     bpy.types.Palette.palette_import_meta = PointerProperty(type=properties.PALETTE_PG_import_meta)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
     panels.register_icons()
+    prefs = bpy.context.preferences.addons[__package__].preferences
+    preferences.apply_hide_builtin_color_palette(prefs.hide_builtin_color_palette)
 
 
 def unregister():
+    preferences.apply_hide_builtin_color_palette(False)
     panels.unregister_icons()
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
     del bpy.types.Palette.palette_import_meta

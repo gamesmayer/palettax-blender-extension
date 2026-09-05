@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "palettax"
-version = "1.1.2"
+version = "0.5.0"
 name = "Palettax"
 tagline = "Upgrade color palette management in Blender"
 maintainer = "Carlos Sala Samper"

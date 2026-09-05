@@ -3,6 +3,9 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SOURCE_DIR="$ROOT_DIR/src"
+RELEASES_DIR="$ROOT_DIR/releases"
+
+mkdir -p "$RELEASES_DIR"
 
 if [ -n "${BLENDER:-}" ]; then
     BLENDER_BIN="$BLENDER"
@@ -19,4 +22,4 @@ if [ ! -x "$BLENDER_BIN" ] && ! command -v "$BLENDER_BIN" >/dev/null 2>&1; then
 fi
 
 "$BLENDER_BIN" --command extension validate "$SOURCE_DIR"
-"$BLENDER_BIN" --command extension build --source-dir "$SOURCE_DIR" --output-dir "$ROOT_DIR"
+"$BLENDER_BIN" --command extension build --source-dir "$SOURCE_DIR" --output-dir "$RELEASES_DIR"

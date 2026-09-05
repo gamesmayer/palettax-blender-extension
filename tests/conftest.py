@@ -22,11 +22,13 @@ def _install_bpy_stubs():
     bpy.props.PointerProperty = _prop_stub
     bpy.props.CollectionProperty = _prop_stub
     bpy.props.FloatVectorProperty = _prop_stub
+    bpy.props.BoolProperty = _prop_stub
 
     bpy.types = types.ModuleType("bpy.types")
     bpy.types.Operator = type("Operator", (), {})
-    bpy.types.Panel = type("Panel", (), {})
+    bpy.types.Panel = type("Panel", (), {"__subclasses__": classmethod(lambda cls: [])})
     bpy.types.PropertyGroup = type("PropertyGroup", (), {})
+    bpy.types.AddonPreferences = type("AddonPreferences", (), {})
 
     bpy.utils = types.ModuleType("bpy.utils")
     bpy.utils.register_class = lambda cls: None
