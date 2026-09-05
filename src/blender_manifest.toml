@@ -1,11 +1,13 @@
 schema_version = "1.0.0"
 
-id = "import_palettes"
-version = "1.0.0"
-name = "Import Palettes"
-tagline = "Import color palette files as Blender color palettes"
-maintainer = "Carlos Salas <carlossala95@gmail.com>"
+id = "palettax"
+version = "1.1.2"
+name = "Palettax"
+tagline = "Upgrade color palette management in Blender"
+maintainer = "Carlos Sala Samper"
 type = "add-on"
+website = "https://godofprogramming.com"
+icon = "icon.png"
 
 tags = ["Import-Export", "Paint"]
 
