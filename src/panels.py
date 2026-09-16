@@ -111,61 +111,81 @@ class PALETTE_OT_apply_swatch_color(Operator):
         return {'FINISHED'}
 
 
-class _PaletteSwatchesMixin:
-    bl_label = "Palette Swatches"
+def _palette_entries(palette):
+    colors = list(palette.colors) if palette is not None else []
+    entries = []
+    group_names = []
+    if colors:
+        meta = palette.palette_import_meta
+        if len(meta.colors) == len(colors):
+            entries = [(c, m.name, m.group_name) for c, m in zip(colors, meta.colors)]
+            group_names = [g.name for g in meta.groups]
+        else:
+            # Palette was edited (colors added/removed/reordered) after
+            # import, so the metadata no longer lines up by index. Fall
+            # back to a flat, unnamed, ungrouped view rather than showing
+            # wrong names or crashing.
+            entries = [(c, "", "") for c in colors]
+    return entries, group_names
+
+
+def _palette_color_lookup(entries):
+    lookup = {}
+    for c, name, _group in entries:
+        gamma_key = _quantize(tuple(linear_to_srgb(v) for v in c.color))
+        if gamma_key not in lookup:
+            lookup[gamma_key] = name
+    return lookup
+
+
+class _CurrentColorMixin:
+    bl_label = "Current Color"
+
+    def draw(self, context):
+        layout = self.layout
+        image_paint = context.tool_settings.image_paint
+        brush_color = _current_brush_color(image_paint)
+        if brush_color is None:
+            return
+
+        entries, _group_names = _palette_entries(image_paint.palette)
+        palette_colors = _palette_color_lookup(entries)
+        current_color = _quantize(brush_color)
+
+        hex_code = _hex_for_gamma_color(brush_color)
+        if current_color in palette_colors:
+            name = palette_colors[current_color] or "Unnamed color"
+            text = f"{name} - {hex_code}"
+        else:
+            text = hex_code
+
+        row = layout.row()
+        row.label(text=text)
+        row.template_icon(icon_value=_icon_for_gamma_color(brush_color), scale=3.0)
+
+        if entries and current_color not in palette_colors:
+            box = layout.box()
+            box.alert = True
+            box.label(text="Current color is not in the active palette", icon='ERROR')
+
+
+class _PaletteMixin:
+    bl_label = "Palette"
 
     def draw(self, context):
         layout = self.layout
         image_paint = context.tool_settings.image_paint
         palette = image_paint.palette
         brush_color = _current_brush_color(image_paint)
-
         current_color = _quantize(brush_color) if brush_color is not None else None
-
-        colors = list(palette.colors) if palette is not None else []
-        entries = []
-        group_names = []
-        if colors:
-            meta = palette.palette_import_meta
-            if len(meta.colors) == len(colors):
-                entries = [(c, m.name, m.group_name) for c, m in zip(colors, meta.colors)]
-                group_names = [g.name for g in meta.groups]
-            else:
-                # Palette was edited (colors added/removed/reordered) after
-                # import, so the metadata no longer lines up by index. Fall
-                # back to a flat, unnamed, ungrouped view rather than showing
-                # wrong names or crashing.
-                entries = [(c, "", "") for c in colors]
-
-        palette_colors = {}
-        for c, name, _group in entries:
-            gamma_key = _quantize(tuple(linear_to_srgb(v) for v in c.color))
-            if gamma_key not in palette_colors:
-                palette_colors[gamma_key] = name
-
-        if brush_color is not None:
-            row = layout.row()
-            row.label(text="Current Color")
-            row.template_icon(icon_value=_icon_for_gamma_color(brush_color), scale=3.0)
-
-            hex_code = _hex_for_gamma_color(brush_color)
-            if current_color in palette_colors:
-                name = palette_colors[current_color] or "Unnamed color"
-                layout.label(text=f"{name} - {hex_code}")
-            else:
-                layout.label(text=hex_code)
-
-            if entries and current_color not in palette_colors:
-                box = layout.box()
-                box.alert = True
-                box.label(text="Current color is not in the active palette", icon='ERROR')
 
         layout.template_ID(image_paint, "palette", new="palette.new")
         if palette is None:
             layout.label(text="No active palette", icon='INFO')
             return
 
-        if not colors:
+        entries, group_names = _palette_entries(palette)
+        if not entries:
             layout.label(text="Palette is empty", icon='INFO')
             return
 
@@ -213,7 +233,7 @@ class _PaletteSwatchesMixin:
                 op.swatch_name = name
 
 
-class PALETTE_PT_extended_view(_PaletteSwatchesMixin, Panel):
+class PALETTE_PT_current_color(_CurrentColorMixin, Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Palettax"
@@ -223,7 +243,7 @@ class PALETTE_PT_extended_view(_PaletteSwatchesMixin, Panel):
         return context.mode == 'PAINT_TEXTURE'
 
 
-class PALETTE_PT_extended_view_image_editor(_PaletteSwatchesMixin, Panel):
+class PALETTE_PT_current_color_image_editor(_CurrentColorMixin, Panel):
     bl_space_type = 'IMAGE_EDITOR'
     bl_region_type = 'UI'
     bl_category = "Palettax"
@@ -233,7 +253,37 @@ class PALETTE_PT_extended_view_image_editor(_PaletteSwatchesMixin, Panel):
         return context.space_data.mode == 'PAINT'
 
 
-class PALETTE_PT_extended_view_tool(_PaletteSwatchesMixin, Panel):
+class PALETTE_PT_current_color_tool(_CurrentColorMixin, Panel):
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'imagepaint'
+
+    @classmethod
+    def poll(cls, context):
+        return context.mode == 'PAINT_TEXTURE'
+
+
+class PALETTE_PT_extended_view(_PaletteMixin, Panel):
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Palettax"
+
+    @classmethod
+    def poll(cls, context):
+        return context.mode == 'PAINT_TEXTURE'
+
+
+class PALETTE_PT_extended_view_image_editor(_PaletteMixin, Panel):
+    bl_space_type = 'IMAGE_EDITOR'
+    bl_region_type = 'UI'
+    bl_category = "Palettax"
+
+    @classmethod
+    def poll(cls, context):
+        return context.space_data.mode == 'PAINT'
+
+
+class PALETTE_PT_extended_view_tool(_PaletteMixin, Panel):
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = 'imagepaint'
