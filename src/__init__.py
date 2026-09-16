@@ -30,12 +30,18 @@ def register():
     bpy.types.Palette.palette_import_meta = PointerProperty(type=properties.PALETTE_PG_import_meta)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
     panels.register_icons()
+    separated_space_types = set()
     for tool in tools.tools:
         # No `after=` on purpose: bpy.utils.register_tool() appends to the end
         # of the toolbar's tool list when `after` is omitted, which places
         # this as its own group at the very bottom, past Blender's built-in
-        # brush, select-mask and annotate tools.
-        bpy.utils.register_tool(tool, separator=True)
+        # brush, select-mask and annotate tools. Only the first tool per
+        # space type gets a separator, so that one gap opens up before our
+        # group (after Annotate) but our own tools stay bunched together
+        # with no gaps between them.
+        needs_separator = tool.bl_space_type not in separated_space_types
+        separated_space_types.add(tool.bl_space_type)
+        bpy.utils.register_tool(tool, separator=needs_separator)
     prefs = bpy.context.preferences.addons[__package__].preferences
     preferences.apply_hide_builtin_color_palette(prefs.hide_builtin_color_palette)
 
