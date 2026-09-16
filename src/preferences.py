@@ -1,5 +1,5 @@
 import bpy
-from bpy.props import BoolProperty
+from bpy.props import BoolProperty, StringProperty
 from bpy.types import AddonPreferences
 
 _original_polls = {}  # cls.__name__ -> original poll (or None)
@@ -44,5 +44,16 @@ class PALETTAX_AddonPreferences(AddonPreferences):
         update=_update_hide_builtin,
     )
 
+    featured_color_names: StringProperty(
+        name="Featured Names",
+        description=(
+            "Comma-separated list of color names to highlight as the "
+            "primary color(s) in each group (case-insensitive), e.g. "
+            "\"Base, Highlight, Shadow\""
+        ),
+        default="Base",
+    )
+
     def draw(self, context):
         self.layout.prop(self, "hide_builtin_color_palette")
+        self.layout.prop(self, "featured_color_names")

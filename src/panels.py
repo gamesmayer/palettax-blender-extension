@@ -42,6 +42,10 @@ def _current_brush_color(image_paint):
     return tuple(linear_to_srgb(c) for c in raw)
 
 
+def _featured_names(prefs):
+    return {n.strip().lower() for n in prefs.featured_color_names.split(",") if n.strip()}
+
+
 def _grid_columns(context):
     region = context.region
     if region is None or region.width <= 0:
@@ -54,15 +58,25 @@ def _grid_columns(context):
     return max(1, int(available // cell_width))
 
 
-def _icon_for_gamma_color(rgb):
+_GOLD_BORDER = (0.85, 0.65, 0.13, 1.0)
+
+
+def _icon_for_gamma_color(rgb, featured=False):
     key = _quantize(rgb)
-    name = f"swatch_{key[0]}_{key[1]}_{key[2]}"
+    name = f"swatch_{key[0]}_{key[1]}_{key[2]}" + ("_featured" if featured else "")
     if name not in _preview_collection:
         if len(_preview_collection) > _MAX_CACHED_ICONS:
             _preview_collection.clear()
         img = _preview_collection.new(name)
-        img.image_size = (8, 8)
-        img.image_pixels_float = [key[0] / 255, key[1] / 255, key[2] / 255, 1.0] * 64
+        size = 8
+        img.image_size = (size, size)
+        fill = (key[0] / 255, key[1] / 255, key[2] / 255, 1.0)
+        pixels = []
+        for y in range(size):
+            for x in range(size):
+                on_border = featured and (x in (0, size - 1) or y in (0, size - 1))
+                pixels.extend(_GOLD_BORDER if on_border else fill)
+        img.image_pixels_float = pixels
     return _preview_collection[name].icon_id
 
 
@@ -155,11 +169,15 @@ class _PaletteSwatchesMixin:
             layout.label(text="Palette is empty", icon='INFO')
             return
 
+        prefs = context.preferences.addons[__package__].preferences
+        layout.prop(prefs, "featured_color_names", text="Featured Names")
+        featured_names = _featured_names(prefs)
+
         columns = _grid_columns(context)
 
         ungrouped = [e for e in entries if e[2] == ""]
         if ungrouped:
-            self._draw_grid(layout, ungrouped, columns, current_color)
+            self._draw_grid(layout, ungrouped, columns, current_color, featured_names)
 
         seen = set()
         for group_name in group_names:
@@ -171,15 +189,17 @@ class _PaletteSwatchesMixin:
             seen.add(group_name)
             box = layout.box()
             box.label(text=group_name, icon='GROUP')
-            self._draw_grid(box, members, columns, current_color)
+            self._draw_grid(box, members, columns, current_color, featured_names)
 
-    def _draw_grid(self, layout, entries, columns, current_color=None):
+    def _draw_grid(self, layout, entries, columns, current_color=None, featured_names=frozenset()):
         grid = layout.column(align=True)
         for start in range(0, len(entries), columns):
             row = grid.row(align=True)
             for color, name, _group in entries[start:start + columns]:
                 gamma = tuple(linear_to_srgb(c) for c in color.color)
-                icon_id = _icon_for_gamma_color(gamma)
+                is_current = current_color is not None and _quantize(gamma) == current_color
+                is_featured = name.strip().lower() in featured_names and not is_current
+                icon_id = _icon_for_gamma_color(gamma, featured=is_featured)
                 cell = row.row(align=True)
                 cell.ui_units_x = _SWATCH_UNITS_X
                 cell.ui_units_y = _SWATCH_UNITS_X
@@ -187,7 +207,7 @@ class _PaletteSwatchesMixin:
                     PALETTE_OT_apply_swatch_color.bl_idname,
                     text="",
                     icon_value=icon_id,
-                    depress=(current_color is not None and _quantize(gamma) == current_color),
+                    depress=is_current,
                 )
                 op.color = gamma
                 op.swatch_name = name
