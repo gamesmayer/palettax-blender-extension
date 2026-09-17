@@ -3,7 +3,8 @@ import bpy.utils.previews
 from bpy.props import FloatVectorProperty, StringProperty
 from bpy.types import Operator, Panel
 
-from .color import linear_to_srgb, srgb_to_linear
+from ..preferences import PALETTAX_AddonPreferences
+from ..utils.color import linear_to_srgb, srgb_to_linear
 
 _preview_collection = None
 _MAX_CACHED_ICONS = 512
@@ -189,7 +190,7 @@ class _PaletteMixin:
             layout.label(text="Palette is empty", icon='INFO')
             return
 
-        prefs = context.preferences.addons[__package__].preferences
+        prefs = context.preferences.addons[PALETTAX_AddonPreferences.bl_idname].preferences
         layout.prop(prefs, "featured_color_names", text="Featured Names")
         featured_names = _featured_names(prefs)
 

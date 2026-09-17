@@ -2,7 +2,7 @@ import struct
 
 import pytest
 
-from src.ase import _cmyk_to_rgb, _gray_to_rgb, _lab_to_rgb, parse_ase
+from src.palettes.ase import _cmyk_to_rgb, _gray_to_rgb, _lab_to_rgb, parse_ase
 
 
 def _pack_name(name):

@@ -1,6 +1,6 @@
 import pytest
 
-from src.color import linear_to_srgb, srgb_to_linear
+from src.utils.color import linear_to_srgb, srgb_to_linear
 
 
 def test_srgb_linear_round_trip():

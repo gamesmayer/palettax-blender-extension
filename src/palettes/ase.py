@@ -7,7 +7,7 @@ from bpy.props import StringProperty
 from bpy.types import Operator
 from bpy_extras.io_utils import ImportHelper
 
-from .color import linear_to_srgb, srgb_to_linear
+from ..utils.color import linear_to_srgb, srgb_to_linear
 
 SIGNATURE = b"ASEF"
 BLOCK_GROUP_START = 0xC001

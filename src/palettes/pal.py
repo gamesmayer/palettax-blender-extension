@@ -5,7 +5,7 @@ from bpy.props import StringProperty
 from bpy.types import Operator
 from bpy_extras.io_utils import ImportHelper
 
-from .color import srgb_to_linear
+from ..utils.color import srgb_to_linear
 
 
 def parse_jasc_pal(filepath):

@@ -5,8 +5,10 @@ from bpy_extras import view3d_utils
 from mathutils.bvhtree import BVHTree
 from mathutils.geometry import barycentric_transform
 
-from .color import linear_to_srgb
+from ..utils.color import linear_to_srgb
 from .move_selection import PALETTE_TOOL_move_selection_image_editor
+from .scale_selection import PALETTE_TOOL_scale_selection_image_editor
+from .select import PALETTE_TOOL_select_image_editor
 
 
 class _ColorSamplerKeymapMixin:
@@ -250,5 +252,7 @@ tools = (
     PALETTE_TOOL_color_sampler_image_editor,
     PALETTE_TOOL_color_replacer_view3d,
     PALETTE_TOOL_color_replacer_image_editor,
+    PALETTE_TOOL_select_image_editor,
     PALETTE_TOOL_move_selection_image_editor,
+    PALETTE_TOOL_scale_selection_image_editor,
 )
