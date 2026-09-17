@@ -1,7 +1,7 @@
 import bpy
 from bpy.props import PointerProperty
 
-from . import ase, pal, panels, preferences, properties, tools
+from . import ase, move_selection, pal, panels, preferences, properties, tools
 
 classes = (
     *properties.classes,
@@ -9,6 +9,7 @@ classes = (
     ase.PALETTE_OT_import_ase,
     panels.PALETTE_OT_apply_swatch_color,
     tools.PALETTE_OT_replace_color,
+    move_selection.PALETTE_OT_move_selection,
     panels.PALETTE_PT_current_color,
     panels.PALETTE_PT_current_color_image_editor,
     panels.PALETTE_PT_current_color_tool,
