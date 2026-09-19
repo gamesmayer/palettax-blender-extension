@@ -3,7 +3,7 @@ from bpy.props import PointerProperty
 
 from . import preferences
 from .palettes import ase, pal, panels, properties
-from .tools import color_tools, move_selection, scale_selection, select, selection
+from .tools import color_tools, copy_selection, move_selection, scale_selection, select, selection
 
 classes = (
     *properties.classes,
@@ -15,6 +15,7 @@ classes = (
     select.PALETTE_OT_select,
     move_selection.PALETTE_OT_move_selection,
     scale_selection.PALETTE_OT_scale_selection,
+    copy_selection.PALETTE_OT_copy_selection,
     selection.PALETTE_OT_selection_history,
     panels.PALETTE_PT_current_color,
     panels.PALETTE_PT_current_color_image_editor,

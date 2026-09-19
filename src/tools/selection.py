@@ -123,6 +123,40 @@ def _revert_move(image, entry):
     image.pixels.foreach_set(pixels.reshape(-1))
 
 
+def _commit_copy(image, dest_rect, cached_pixels):
+    """Write-only half of _commit_move: writes cached_pixels into dest_rect
+    and never clears anything. Used by Copy's commit and by history redo
+    for copy entries, so the source stays intact on the initial drag and on
+    every subsequent redo."""
+    width, height = image.size
+    channels = image.channels
+
+    pixels = np.empty(width * height * channels, dtype=np.float32)
+    image.pixels.foreach_get(pixels)
+    pixels = pixels.reshape(height, width, channels)
+
+    dx0, dy0, dx1, dy1 = dest_rect
+    pixels[dy0:dy1, dx0:dx1, :] = cached_pixels
+
+    image.pixels.foreach_set(pixels.reshape(-1))
+
+
+def _revert_copy(image, entry):
+    """Undo half for a copy entry. source_rect was never modified by a copy
+    commit, so - unlike _revert_move - only dest_rect needs restoring."""
+    width, height = image.size
+    channels = image.channels
+
+    pixels = np.empty(width * height * channels, dtype=np.float32)
+    image.pixels.foreach_get(pixels)
+    pixels = pixels.reshape(height, width, channels)
+
+    dx0, dy0, dx1, dy1 = entry['dest_rect']
+    pixels[dy0:dy1, dx0:dx1, :] = entry['dest_pixels_before']
+
+    image.pixels.foreach_set(pixels.reshape(-1))
+
+
 def _preview_rgba(cached_pixels, channels):
     height, width = cached_pixels.shape[:2]
     rgba = np.ones((height, width, 4), dtype=np.float32)
@@ -246,9 +280,10 @@ def _draw_preview_texture_bilinear(texture, coords):
 
 
 def draw_selection_overlay(op):
-    """Shared POST_PIXEL draw-callback body for Select's and Move's modal
-    sessions: hole + floating preview + outline while state == 'MOVING',
-    otherwise just the outline over op.rect."""
+    """Shared POST_PIXEL draw-callback body for Select's, Move's and Copy's
+    modal sessions: hole + floating preview + outline while state == 'MOVING',
+    floating preview + outline (no hole) while state == 'COPYING', otherwise
+    just the outline over op.rect."""
     global is_editing
     try:
         _draw_selection_overlay(op)
@@ -276,7 +311,7 @@ def _draw_selection_overlay(op):
         _draw_filled_rect(source_coords, _HOLE_COLOR)
 
     coords = _rect_to_region_coords(op._space, op._region, op.rect)
-    if op.state == 'MOVING' and op._preview_texture is not None:
+    if op.state in ('MOVING', 'COPYING') and op._preview_texture is not None:
         _draw_preview_texture(op._preview_texture, coords)
     _draw_outline(coords)
 
@@ -364,11 +399,18 @@ class PALETTE_OT_selection_history(bpy.types.Operator):
 
         entry = stack.pop()
         other_stack = get_undo_stack(image) if self.redo else get_redo_stack(image)
+        kind = entry.get('kind', 'move')
         if self.redo:
-            _commit_move(image, entry['source_rect'], entry['dest_rect'], entry['source_pixels'])
+            if kind == 'copy':
+                _commit_copy(image, entry['dest_rect'], entry['source_pixels'])
+            else:
+                _commit_move(image, entry['source_rect'], entry['dest_rect'], entry['source_pixels'])
             new_rect = entry['dest_rect']
         else:
-            _revert_move(image, entry)
+            if kind == 'copy':
+                _revert_copy(image, entry)
+            else:
+                _revert_move(image, entry)
             new_rect = entry['source_rect']
         image.update()
         other_stack.append(entry)
@@ -420,6 +462,32 @@ def commit_move(op, context, image):
         # _redo_stacks, so rebinding it (`op.redo_stack = []`) would only
         # change this operator's local reference, leaving the shared entry
         # (and every other tool) still pointing at the stale list.
+        op.redo_stack.clear()
+        set_selection_rect(image, dest_rect)
+    else:
+        op.rect = op.drag_anchor_rect
+        set_selection_rect(image, op.rect)
+    op.move_source_pixels = None
+    op._preview_texture = None
+
+
+def commit_copy(op, context, image):
+    """Like commit_move, but writes the source block to the destination
+    without ever clearing the source - the only difference between Copy and
+    Move's commit step."""
+    if op.move_offset != (0, 0):
+        dest_rect = op.rect
+        dest_pixels_before = _read_block(image, dest_rect)
+        _commit_copy(image, dest_rect, op.move_source_pixels)
+        image.update()
+        _tag_redraw_all(context)
+        op.undo_stack.append({
+            'kind': 'copy',
+            'source_rect': op.move_source_rect,
+            'dest_rect': dest_rect,
+            'source_pixels': op.move_source_pixels,
+            'dest_pixels_before': dest_pixels_before,
+        })
         op.redo_stack.clear()
         set_selection_rect(image, dest_rect)
     else:

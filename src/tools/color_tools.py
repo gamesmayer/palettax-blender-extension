@@ -6,6 +6,7 @@ from mathutils.bvhtree import BVHTree
 from mathutils.geometry import barycentric_transform
 
 from ..utils.color import linear_to_srgb
+from .copy_selection import PALETTE_TOOL_copy_selection_image_editor
 from .move_selection import PALETTE_TOOL_move_selection_image_editor
 from .scale_selection import PALETTE_TOOL_scale_selection_image_editor
 from .select import PALETTE_TOOL_select_image_editor
@@ -255,4 +256,5 @@ tools = (
     PALETTE_TOOL_select_image_editor,
     PALETTE_TOOL_move_selection_image_editor,
     PALETTE_TOOL_scale_selection_image_editor,
+    PALETTE_TOOL_copy_selection_image_editor,
 )
