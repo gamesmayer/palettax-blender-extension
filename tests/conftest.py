@@ -1,56 +1,80 @@
-"""Stubs out the `bpy` API surface the addon touches at import time, so the
-pure-Python parsing/conversion logic in src/color.py and src/ase.py can be
-unit tested without a running Blender.
+"""Stubs out the Blender modules (`bpy`, `gpu`, `mathutils`, ...) the addon
+touches at import time, so the pure-Python parsing/conversion logic in
+src/utils/color.py and src/palettes/ase.py can be unit tested without a
+running Blender.
+
+Stub modules resolve any attribute lazily, so new Blender API usage in the
+addon doesn't require updating this file.
 """
 import sys
 import types
 from pathlib import Path
+from unittest.mock import MagicMock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 
-def _install_bpy_stubs():
+class _StubModule(types.ModuleType):
+    """Module whose missing attributes are produced by `factory(name)`."""
+
+    def __init__(self, name, factory):
+        super().__init__(name)
+        self._factory = factory
+
+    def __getattr__(self, attr):
+        if attr.startswith("__"):
+            raise AttributeError(attr)
+        value = self._factory(attr)
+        setattr(self, attr, value)
+        return value
+
+
+def _mock(attr):
+    return MagicMock(name=attr)
+
+
+def _prop_stub(attr):
+    return lambda *args, **kwargs: None
+
+
+def _class_stub(attr):
+    # bpy.types / mixins like ImportHelper are subclassed by the addon, so
+    # they must be real classes rather than mocks.
+    return type(attr, (), {})
+
+
+def _install(name, factory=_mock):
+    module = _StubModule(name, factory)
+    sys.modules[name] = module
+    parent_name, _, child = name.rpartition(".")
+    if parent_name:
+        setattr(sys.modules[parent_name], child, module)
+    return module
+
+
+def _install_blender_stubs():
     if "bpy" in sys.modules:
         return
 
-    def _prop_stub(**kwargs):
-        return None
+    _install("bpy")
+    _install("bpy.props", _prop_stub)
+    bpy_types = _install("bpy.types", _class_stub)
+    bpy_types.Panel = type("Panel", (), {"__subclasses__": classmethod(lambda cls: [])})
+    _install("bpy.utils")
+    _install("bpy.utils.previews")
+    _install("bpy.data")
 
-    bpy = types.ModuleType("bpy")
-    bpy.props = types.ModuleType("bpy.props")
-    bpy.props.StringProperty = _prop_stub
-    bpy.props.PointerProperty = _prop_stub
-    bpy.props.CollectionProperty = _prop_stub
-    bpy.props.FloatVectorProperty = _prop_stub
-    bpy.props.BoolProperty = _prop_stub
+    _install("bpy_extras")
+    _install("bpy_extras.io_utils", _class_stub)
+    _install("bpy_extras.view3d_utils")
 
-    bpy.types = types.ModuleType("bpy.types")
-    bpy.types.Operator = type("Operator", (), {})
-    bpy.types.Panel = type("Panel", (), {"__subclasses__": classmethod(lambda cls: [])})
-    bpy.types.PropertyGroup = type("PropertyGroup", (), {})
-    bpy.types.AddonPreferences = type("AddonPreferences", (), {})
+    _install("gpu")
+    _install("gpu_extras")
+    _install("gpu_extras.batch")
 
-    bpy.utils = types.ModuleType("bpy.utils")
-    bpy.utils.register_class = lambda cls: None
-    bpy.utils.unregister_class = lambda cls: None
-    bpy.utils.previews = types.ModuleType("bpy.utils.previews")
-    bpy.utils.previews.new = lambda: None
-    bpy.utils.previews.remove = lambda collection: None
-
-    bpy.data = types.ModuleType("bpy.data")
-
-    bpy_extras = types.ModuleType("bpy_extras")
-    bpy_extras.io_utils = types.ModuleType("bpy_extras.io_utils")
-    bpy_extras.io_utils.ImportHelper = type("ImportHelper", (), {})
-
-    sys.modules["bpy"] = bpy
-    sys.modules["bpy.props"] = bpy.props
-    sys.modules["bpy.types"] = bpy.types
-    sys.modules["bpy.utils"] = bpy.utils
-    sys.modules["bpy.utils.previews"] = bpy.utils.previews
-    sys.modules["bpy.data"] = bpy.data
-    sys.modules["bpy_extras"] = bpy_extras
-    sys.modules["bpy_extras.io_utils"] = bpy_extras.io_utils
+    _install("mathutils")
+    _install("mathutils.bvhtree")
+    _install("mathutils.geometry")
 
 
-_install_bpy_stubs()
+_install_blender_stubs()

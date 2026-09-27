@@ -30,7 +30,7 @@ jobs:
             exit 1
           fi
 
-      - run: pip install pytest
+      - run: pip install pytest numpy
 
       - run: pytest
 
