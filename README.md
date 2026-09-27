@@ -78,6 +78,24 @@ extended, readonly view of the active palette that groups swatches the way
 they were grouped in the source `.ase` file, shows each color's name as a
 tooltip, and sets the active brush color when you click a swatch.
 
+## Deployment
+
+Releases are published by the [Release workflow](.github/workflows/release.yml)
+when a `v*.*.*` tag is pushed. It checks that the tag matches the manifest
+version, runs the tests, builds the zip with Blender 5.2.0 via `build.sh`, and
+attaches it to a new GitHub Release.
+
+1. Bump `version` in `src/blender_manifest.toml` and commit it.
+2. Tag that commit with the same version, prefixed with `v`, and push the tag:
+
+   ```sh
+   git tag v0.7.0
+   git push origin v0.7.0
+   ```
+
+The workflow fails if the tag and the manifest version don't match. To build
+with a different Blender version, change `BLENDER_VERSION` in the workflow.
+
 ## Project layout
 
 ```
@@ -100,4 +118,6 @@ src/
     move_selection.py     Move Selection tool
     scale_selection.py    Scale Selection tool
 build.sh                  validates and packages the extension into a zip
+.github/workflows/
+  release.yml             builds and publishes a GitHub Release on version tags
 ```
